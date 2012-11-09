@@ -1,0 +1,120 @@
+html, body {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  font-family: Helvetica, sans-serif;
+  font-size: 0.9em;
+}
+
+label {
+  display: block;
+  font-weight: bold;
+}
+
+#edit-dialog label {
+  display: inline-block;
+  font-weight: bold;
+  width: 80px;
+}
+
+#edit-dialog input {
+  display: block;
+  display: inline-block;
+  width: 180px;
+}
+
+.card {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  margin-top: 40px;
+  margin-bottom: 40px;
+  padding: 10px;
+}
+
+  .card-header {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    height: 20px;
+    padding: 12px 10px 8px 10px;
+    font-weight: bold;
+    font-size: 1.2em;
+  }
+
+  .card-content {
+    height: 100%;
+  }
+
+  .card-footer {
+    position: absolute;
+    bottom: -40px;
+    left: 0;
+    height: 20px;
+    padding: 8px 10px 12px 8px;
+  }
+
+#input-source {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  margin: 0 10px 0 10px;
+}
+
+#save-source {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  margin: 0 10px 0 10px;
+}
+
+#settings-panel {
+  width: 30%;
+  height: 100%;
+  float: left;
+}
+
+  #settings-table tr.active {
+    background: gray;
+  }
+
+  #settings-panel input {
+    width: 98%;
+    margin-bottom: 20px;
+  }
+
+  #settings-panel tr {
+    cursor: pointer;
+  }
+
+  #settings-panel tr.header {
+    cursor: default;
+  }
+
+  #settings-panel tr.active {
+    background: #94F0FF;
+  }
+
+  #settings-panel th {
+    padding: 5px;
+    border-bottom: 2px solid;
+    text-align: left;
+  }
+
+  #settings-panel td {
+    border-bottom: 1px solid;
+    padding: 5px;
+  }
+
+#settings-map {
+  width: 70%;
+  height: 100%;
+  float: left;
+}
