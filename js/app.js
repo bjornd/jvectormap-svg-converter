@@ -1,4 +1,111 @@
 var app = (function(){
+
+  function Matrix(m){
+    this.m = m;
+  }
+
+  Matrix.multVectors = function(v1, v2){
+    var sum = 0,
+        i;
+
+    for (i = 0; i < v1.length; i++) {
+      sum += v1[i]*v2[i];
+    }
+    return sum;
+  };
+
+  Matrix.prototype.getRow = function(index){
+    return this.m[index];
+  };
+
+  Matrix.prototype.getColumn = function(index){
+    var i,
+        v = [];
+
+    for (i = 0; i < this.m.length; i++) {
+      v[i] = this.m[i][index];
+    }
+    return v;
+  };
+
+  Matrix.prototype.mult = function(m2){
+    var i,
+        j,
+        m1 = this,
+        m = [];
+
+    for (i = 0; i < m1.m.length; i++) {
+      m[i] = [];
+      for (j = 0; j < m2.m[i].length; j++) {
+        m[i][j] = Matrix.multVectors(m1.getRow(i), m2.getColumn(j));
+      }
+    };
+    return new Matrix(m);
+  };
+
+
+  function SvgUtils(){}
+
+  SvgUtils.transformRegExp = /(matrix|translate|scale)\(([^)]*)\)/g;
+
+  SvgUtils.parseTransform = function(transform){
+    var match,
+        args = [],
+        result = new Matrix([[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
+        matrix,
+        args,
+        i;
+
+    while ((match = SvgUtils.transformRegExp.exec(transform)) !== null) {
+      matrix = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+      args = match[2].split(',');
+      for (i = 0; i < args.length; i++) {
+        args[i] = parseFloat($.trim(args[i]));
+      }
+      if (match[1] == 'matrix') {
+        matrix[0] = [args[0], args[2], args[4]];
+        matrix[1] = [args[1], args[3], args[5]];
+      } else if (match[1] == 'translate') {
+        matrix[0][2] = args[0];
+        matrix[1][2] = args[1] || 0;
+      } else if (match[1] == 'scale') {
+        matrix[0][0] = args[0];
+        matrix[1][1] = args[1] || args[0];
+      }
+      result = result.mult(new Matrix(matrix));
+    }
+    return result;
+  };
+
+  SvgUtils.applyTransformToPath = function(path, matrix){
+    var re = /([MmLlHhVvCcSsZz])([^MmLlHhVvCcSsZz]*)/g,
+        coords,
+        i,
+        cmdIndex = 0,
+        m = matrix.m,
+        tPath = '',
+        point;
+        relativeMatrix = new Matrix([[m[0][0], m[0][1], 0], [m[1][0], m[1][1], 0], [0, 0, 1]]);
+
+    while ((match = re.exec(path)) !== null) {
+      coords = $.trim(match[2]).split(/[, ]+/g);
+      tCoords = [];
+      if (coords.length >= 2) {
+        for (i = 0; i < coords.length; i += 2) {
+          if (match[1] === match[1].toUpperCase() || cmdIndex == 0) {
+            point = matrix.mult(new Matrix([[ coords[i] ], [ coords[i+1] ], [1] ]));
+          } else {
+            point = relativeMatrix.mult(new Matrix([[ coords[i] ], [ coords[i+1] ], [1] ]));
+          }
+          tCoords.push(point.m[0][0].toFixed(2), point.m[1][0].toFixed(2));
+        }
+      }
+      tPath += match[1]+tCoords.join(' ');
+      cmdIndex++;
+    }
+    return tPath;
+  }
+
   function MapRegion(data){
     this.originalId = data.id || 'id'+MapRegion.uid;
     this.id = ko.observable(this.originalId);
@@ -42,14 +149,21 @@ var app = (function(){
     }
   };
 
-  Map.prototype.loadFromSvg = function(svg){
+  Map.prototype.loadFromSvg = function(svg, settings){
     var that = this;
 
     this.width = parseInt($(svg).find('svg').attr('width'), 10);
     this.height = parseInt($(svg).find('svg').attr('height'), 10)
     $(svg).find('path').each(function(i){
+      var fullTransform = '';
+
+      $(this).parents().add(this).each(function(){
+        fullTransform += ' '+$(this).attr('transform');
+      });
       that.paths.push(new MapRegion({
-        path: $(this).attr('d')
+        id: $(this).attr('id') || null,
+        name: $(this).attr('name') || null,
+        path: SvgUtils.applyTransformToPath( $(this).attr('d'), SvgUtils.parseTransform(fullTransform) )
       }));
     });
   }
@@ -68,7 +182,7 @@ var app = (function(){
       modal: true,
       resizable: false,
       buttons: {
-        Ok: function() {
+        OK: function() {
           that.path.id( $('#edit-dialog-id').val() );
           that.path.name( $('#edit-dialog-name').val() );
           $( this ).dialog( "close" );
@@ -118,7 +232,10 @@ var app = (function(){
       layout = new CardLayout($('.card'));
 
   $('#input-convert').click(function(){
-    map.loadFromSvg( $.parseXML($('#input-source').val()) );
+    map.loadFromSvg( $.parseXML( $.trim( $('#input-source').val()) ), {
+      idAttribure: $('#input-id-attribute input').val(),
+      nameAttribute: $('#input-name-attribute input').val()
+    } );
     layout.show('settings');
     jvmMap = map.createJvmMap({
       container: $('#settings-map'),
@@ -126,7 +243,9 @@ var app = (function(){
       backgroundColor: 'white',
       regionStyle: {
         initial: {
-          fill: '#02B2FF'
+          fill: '#02B2FF',
+          stroke: 'white',
+          "stroke-width": 1.5
         },
         hover: {
           fill: '#02DBFF'
