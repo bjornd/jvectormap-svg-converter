@@ -104,7 +104,26 @@ var app = (function(){
       cmdIndex++;
     }
     return tPath;
-  }
+  };
+
+  SvgUtils.units = {
+    "pt": 1.25,
+    "pc": 15,
+    "mm": 3.543307,
+    "cm": 35.43307,
+    "in": 90
+  };
+
+  SvgUtils.lengthToPixels = function(v){
+    var units = v.substr(v.length - 2),
+        number = parseInt(v.substr(0, v.length - 2), 10);
+
+    if (SvgUtils.units[units]) {
+      return number * SvgUtils.units[units];
+    } else {
+      return v;
+    }
+  };
 
   function MapRegion(data){
     this.originalId = data.id || 'id'+MapRegion.uid;
@@ -150,20 +169,40 @@ var app = (function(){
   };
 
   Map.prototype.loadFromSvg = function(svg, settings){
-    var that = this;
+    var that = this,
+        svgEl = $(svg).find('svg'),
+        viewBox;
 
-    this.width = parseInt($(svg).find('svg').attr('width'), 10);
-    this.height = parseInt($(svg).find('svg').attr('height'), 10)
-    $(svg).find('path').each(function(i){
-      var fullTransform = '';
+    if (svgEl.attr('viewBox')) {
+      viewBox = $.trim(svgEl.attr('viewBox')).split(/[\s]/);
+      this.width = parseFloat(viewBox[2]) - parseFloat(viewBox[0]);
+      this.height = parseFloat(viewBox[3]) - parseFloat(viewBox[1]);
+    } else {
+      this.width = SvgUtils.lengthToPixels( svgEl.attr('width') );
+      this.height = SvgUtils.lengthToPixels( svgEl.attr('height') );
+    }
+    svgEl.find('path, polygon').each(function(i){
+      var fullTransform = '',
+          pathStr,
+          points,
+          i;
 
       $(this).parents().add(this).each(function(){
         fullTransform += ' '+$(this).attr('transform');
       });
+      if (this.tagName.toLowerCase() == 'polygon') {
+        points = $.trim( $(this).attr('points') ).split(/[\s,]+/);
+        pathStr = 'M'+points[0]+','+points[1];
+        for (i = 2; i < points.length; i+=2) {
+          pathStr += 'L'+points[i]+','+points[i+1];
+        }
+      } else {
+        pathStr = $(this).attr('d');
+      }
       that.paths.push(new MapRegion({
         id: $(this).attr('id') || null,
         name: $(this).attr('name') || null,
-        path: SvgUtils.applyTransformToPath( $(this).attr('d'), SvgUtils.parseTransform(fullTransform) )
+        path: SvgUtils.applyTransformToPath( pathStr, SvgUtils.parseTransform(fullTransform) )
       }));
     });
   }
