@@ -80,15 +80,31 @@ var app = (function(){
   SvgUtils.applyTransformToPath = function(path, matrix){
     var re = /([MmLlHhVvCcSsZz])([^MmLlHhVvCcSsZz]*)/g,
         coords,
+        coordsTmp,
         i,
         cmdIndex = 0,
         m = matrix.m,
         tPath = '',
-        point;
+        point,
         relativeMatrix = new Matrix([[m[0][0], m[0][1], 0], [m[1][0], m[1][1], 0], [0, 0, 1]]);
 
+    //prepare path to parse it with regexp easily
+    path = path.replace(/(\d)-/g, '$1,-')
     while ((match = re.exec(path)) !== null) {
       coords = $.trim(match[2]).split(/[, ]+/g);
+      if (match[1].toLowerCase() === 'h') {
+        coordsTmp = [];
+        for (i = 0; i < coords.length; i++) {
+          coordsTmp.push(coords[i], 0);
+        }
+        coords = coordsTmp;
+      } else if (match[1].toLowerCase() === 'v') {
+        coordsTmp = [];
+        for (i = 0; i < coords.length; i++) {
+          coordsTmp.push(0, coords[i]);
+        }
+        coords = coordsTmp;
+      }
       tCoords = [];
       if (coords.length >= 2) {
         for (i = 0; i < coords.length; i += 2) {
@@ -188,7 +204,9 @@ var app = (function(){
           i;
 
       $(this).parents().add(this).each(function(){
-        fullTransform += ' '+$(this).attr('transform');
+        if ($(this).attr('transform')) {
+          fullTransform += ' '+$(this).attr('transform');
+        }
       });
       if (this.tagName.toLowerCase() == 'polygon') {
         points = $.trim( $(this).attr('points') ).split(/[\s,]+/);
