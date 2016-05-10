@@ -218,8 +218,8 @@ var app = (function(){
         pathStr = $(this).attr('d');
       }
       that.paths.push(new MapRegion({
-        id: $(this).attr('id') || null,
-        name: $(this).attr('name') || null,
+        id: $(this).attr(settings.idAttribute || 'id') || null,
+        name: $(this).attr(settings.nameAttribute || 'name') || null,
         path: SvgUtils.applyTransformToPath( pathStr, SvgUtils.parseTransform(fullTransform) )
       }));
     });
@@ -290,7 +290,7 @@ var app = (function(){
 
   $('#input-convert').click(function(){
     map.loadFromSvg( $.parseXML( $.trim( $('#input-source').val()) ), {
-      idAttribure: $('#input-id-attribute input').val(),
+      idAttribute: $('#input-id-attribute input').val(),
       nameAttribute: $('#input-name-attribute input').val()
     } );
     layout.show('settings');
